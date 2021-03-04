@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { actionCreators } from "../../common";
-import { FileContainer, Title, ContentArea } from "./style";
+import { FileContainer, Title, ContentArea, DeleteButton } from "./style";
 
 import { connect } from "react-redux";
 import {
@@ -14,10 +14,12 @@ import {
 class FileArea extends Component {
   constructor(props) {
     super(props);
-
-    this.state = {};
+    const id = this.props.file.get("id");
+    const title = this.props.file.get("title");
     const content = this.props.file.get("content");
-    if (content) {
+
+    this.state = { id: id, title: title };
+    if (content && this.checkJson(content)) {
       this.state.editorState = EditorState.createWithContent(
         convertFromRaw(JSON.parse(content))
       );
@@ -44,9 +46,24 @@ class FileArea extends Component {
   render() {
     return (
       <FileContainer>
-        <Title onChange={(e) => this.updateTitle(e.target.innerHtml)}>
-          {this.props.file.get("title")}
-        </Title>
+        <Title
+          value={this.state.title}
+          onChange={(e) => this.updateTitle(e.target.value)}
+        />
+
+        <DeleteButton
+          onClick={() => {
+            if (
+              window.confirm(
+                "Are you sure you wish to delete this item? - " +
+                  this.props.file.get("id")
+              )
+            )
+              this.delete(this.props.file.get("id"));
+          }}
+        >
+          X
+        </DeleteButton>
         <ContentArea>
           <Editor
             editorState={this.state.editorState}
@@ -58,7 +75,21 @@ class FileArea extends Component {
     );
   }
 
+  checkJson(str) {
+    try {
+      JSON.parse(str);
+    } catch (e) {
+      return false;
+    }
+    return true;
+  }
+
+  updateTag(tag) {
+    this.props.updateTag(this.props.file.get("id"), tag);
+  }
+
   updateTitle(title) {
+    this.setState({ title: title });
     this.props.updateTitle(this.props.file.get("id"), title);
   }
 
@@ -66,12 +97,12 @@ class FileArea extends Component {
     // save to data
     if (editorState.getCurrentContent().hasText()) {
       const content = editorState.getCurrentContent();
-      this.props.update(
+      this.props.updateContent(
         this.props.file.get("id"),
         JSON.stringify(convertToRaw(content))
       );
     }
-    this.setState({ editorState });
+    this.setState({ editorState: editorState });
   }
 
   // function to trigger bold type
@@ -79,14 +110,14 @@ class FileArea extends Component {
     this.onChange(RichUtils.toggleInlineStyle(this.state.editorState, "BOLD"));
   }
 
+  // re-render the constructor
   componentDidUpdate(prevProps) {
     const newId = this.props.file.get("id");
     const oldId = prevProps.file.get("id");
     if (oldId !== newId) {
-      console.log("newID: " + newId + ", oldId: " + oldId);
+      // console.log("newID: " + newId + ", oldId: " + oldId);
       const content = this.props.file.get("content");
-      console.log("new content: " + content);
-      if (content) {
+      if (content && this.checkJson(content)) {
         this.setState({
           editorState: EditorState.createWithContent(
             convertFromRaw(JSON.parse(content))
@@ -97,6 +128,16 @@ class FileArea extends Component {
           editorState: EditorState.createEmpty(),
         });
       }
+      // console.log("new id?" + this.props.file.get("id"));
+      this.setState({
+        title: this.props.file.get("title"),
+      });
+    }
+  }
+
+  delete(id) {
+    if (id) {
+      this.props.delete(id);
     }
   }
 }
@@ -113,10 +154,16 @@ const mapDispatchToProps = (dispatch) => {
       dispatch(actionCreators.getContentById(id));
     },
     updateTitle(id, title) {
-      dispatch(actionCreators.updateTagById(id, title));
+      dispatch(actionCreators.updateTitleById(id, title));
     },
-    update(id, content) {
+    updateContent(id, content) {
       dispatch(actionCreators.updateContentById(id, content));
+    },
+    updateTag(id, tag) {
+      dispatch(actionCreators.updateTagById(id, tag));
+    },
+    delete(id) {
+      dispatch(actionCreators.deleteNoteById(id));
     },
   };
 };

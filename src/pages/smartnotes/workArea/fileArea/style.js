@@ -6,11 +6,9 @@ export const FileContainer = styled.div`
   border: 1px solid blue;
 `;
 
-export const Title = styled.div`
-    width: 100%;
+export const Title = styled.input`
+    width: 80%;
     height; 20px;
-    
-    color: red;
     
     border: 1px solid green;
 `;
@@ -22,4 +20,11 @@ export const ContentArea = styled.div.attrs({
   height: 500px;
 
   border: 1px solid blue;
+`;
+
+export const DeleteButton = styled.button`
+  width: 20px;
+  height: 20px;
+
+  border: 1px solid green;
 `;

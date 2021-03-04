@@ -2,14 +2,20 @@ import * as constants from "./constants";
 import { fromJS } from "immutable";
 import axios from "axios";
 
+const addNote = (data) => ({
+  type: constants.ADD_NEW_NOTE,
+  data: data,
+});
+
 export const addNewNote = () => {
   return (dispatch) => {
     axios
       .post("/api/note/new", {})
       .then((res) => {
-        // const newData = { id: res.data.id };
+        const data = res.data;
+        console.log("new inserted id: " + JSON.stringify(res.data.data.id));
+        dispatch(getContent(data.data));
         list(dispatch);
-        getCon(dispatch, res.data.id);
       })
       .catch((err) => {
         console.log(err);
@@ -25,15 +31,6 @@ const changeList = (data) => ({
 export const getList = () => {
   // type: constants.GET_LIST,
   return (dispatch) => {
-    // axios
-    //   .get("/api/note/list")
-    //   .then((res) => {
-    //     const data = res.data;
-    //     dispatch(changeList(data.data));
-    //   })
-    //   .catch((err) => {
-    //     console.log(err);
-    //   });
     list(dispatch);
   };
 };
@@ -51,18 +48,7 @@ const list = (dispatch) => {
 };
 
 export const getContentById = (id) => {
-  // type: constants.GET_LIST,
   return (dispatch) => {
-    // axios
-    //   .get("/api/note/get?id=" + id)
-    //   .then((res) => {
-    //     const data = res.data;
-    //     console.log("getting from ajax: " + res.data);
-    //     dispatch(getContent(data.data));
-    //   })
-    //   .catch((err) => {
-    //     console.log(err);
-    //   });
     getCon(dispatch, id);
   };
 };
@@ -88,7 +74,7 @@ const getContent = (data) => ({
 export const updateContentById = (id, content) => {
   return (dispatch) => {
     axios
-      .post("/api/note/update", { id: id, content: content })
+      .post("/api/note/update/content", { id: id, content: content })
       .then((res) => {
         console.log("update from ajax: " + res.data);
         dispatch(updateContent(content));
@@ -99,7 +85,7 @@ export const updateContentById = (id, content) => {
   };
 };
 
-export const updateContent = (content) => ({
+const updateContent = (content) => ({
   type: constants.UPDATE_CONTENT_BY_ID,
   content,
 });
@@ -107,9 +93,10 @@ export const updateContent = (content) => ({
 export const updateTitleById = (id, title) => {
   return (dispatch) => {
     axios
-      .post("/api/note/update", { id: id, title: title })
+      .post("/api/note/update/title", { id: id, title: title })
       .then((res) => {
-        dispatch(updateContent(title));
+        dispatch(updateTitle(title));
+        list(dispatch);
       })
       .catch((err) => {
         console.log(err);
@@ -117,9 +104,27 @@ export const updateTitleById = (id, title) => {
   };
 };
 
-export const updateTitle = (title) => ({
+const updateTitle = (title) => ({
   type: constants.UPDATE_TITLE_BY_ID,
   title,
+});
+
+export const deleteNoteById = (id) => {
+  return (dispatch) => {
+    axios
+      .post("/api/note/delete", { id: id })
+      .then((res) => {
+        dispatch(deleteNote());
+        list(dispatch);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+};
+
+const deleteNote = () => ({
+  type: constants.DELETE_BY_ID,
 });
 
 export const updateTagById = (id, tag) => ({

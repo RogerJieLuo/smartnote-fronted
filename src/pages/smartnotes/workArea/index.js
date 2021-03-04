@@ -27,6 +27,16 @@ class WorkArea extends Component {
       </Fragment>
     );
   }
+
+  componentDidUpdate(prevProps) {
+    const newId = this.props.file.get("id");
+    const oldId = prevProps.file.get("id");
+    if (oldId !== newId) {
+      this.setState({
+        id: this.props.file.get("id"),
+      });
+    }
+  }
 }
 
 const mapStateToProps = (state) => {
