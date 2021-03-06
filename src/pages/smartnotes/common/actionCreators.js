@@ -2,11 +2,6 @@ import * as constants from "./constants";
 import { fromJS } from "immutable";
 import axios from "axios";
 
-const addNote = (data) => ({
-  type: constants.ADD_NEW_NOTE,
-  data: data,
-});
-
 export const addNewNote = () => {
   return (dispatch) => {
     axios
@@ -76,7 +71,7 @@ export const updateContentById = (id, content) => {
     axios
       .post("/api/note/update/content", { id: id, content: content })
       .then((res) => {
-        console.log("update from ajax: " + res.data);
+        // console.log("update from ajax: " + res.data);
         dispatch(updateContent(content));
       })
       .catch((err) => {

@@ -3,14 +3,15 @@ import styled from "styled-components";
 export const FileContainer = styled.div`
   width: 100%;
 
-  border: 1px solid blue;
+  // border: 1px solid blue;
 `;
 
 export const Title = styled.input`
     width: 80%;
     height; 20px;
+    margin-top: 20px;
     
-    border: 1px solid green;
+    // border: 1px solid green;
 `;
 
 export const ContentArea = styled.div.attrs({
@@ -18,8 +19,11 @@ export const ContentArea = styled.div.attrs({
 })`
   width: 100%;
   height: 500px;
+  margin-top: 20px;
 
-  border: 1px solid blue;
+  border-radius: 5px;
+
+  border: 1px solid gray;
 `;
 
 export const DeleteButton = styled.button`

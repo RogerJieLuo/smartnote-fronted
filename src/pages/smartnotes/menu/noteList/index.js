@@ -1,5 +1,5 @@
 import React, { Component, Fragment } from "react";
-import { NoteListContainer, AddButton, NoteItem } from "./style";
+import { NoteListContainer, AddButton, NoteItem, SelectedItem } from "./style";
 
 import { connect } from "react-redux";
 import { actionCreators } from "../../common";
@@ -11,11 +11,20 @@ class NoteList extends Component {
         <Fragment>
           <AddButton onClick={() => this.addNewNote()}>Add New Note</AddButton>
           {this.props.list.map((it, index) => {
-            return (
-              <NoteItem key={index} onClick={() => this.select(it.get("id"))}>
-                {it.get("title")}
-              </NoteItem>
-            );
+            const id = it.get("id");
+            if (this.props.selectedId === id) {
+              return (
+                <SelectedItem key={index} onClick={() => this.select(id)}>
+                  {it.get("title")}
+                </SelectedItem>
+              );
+            } else {
+              return (
+                <NoteItem key={index} onClick={() => this.select(id)}>
+                  {it.get("title")}
+                </NoteItem>
+              );
+            }
           })}
         </Fragment>
       </NoteListContainer>
@@ -31,7 +40,6 @@ class NoteList extends Component {
   }
 
   select(id) {
-    console.log("id: " + id);
     this.props.selectNote(id);
   }
 }
@@ -39,6 +47,7 @@ class NoteList extends Component {
 const mapStateToProps = (state) => {
   return {
     list: state.list.get("list"),
+    selectedId: state.list.get("selectedId"),
   };
 };
 

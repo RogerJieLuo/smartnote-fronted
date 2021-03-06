@@ -50,7 +50,6 @@ class FileArea extends Component {
           value={this.state.title}
           onChange={(e) => this.updateTitle(e.target.value)}
         />
-
         <DeleteButton
           onClick={() => {
             if (

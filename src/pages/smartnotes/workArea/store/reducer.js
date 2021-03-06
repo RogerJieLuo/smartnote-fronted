@@ -30,7 +30,7 @@ export default (state = defaultFileContent, action) => {
   // not actually used for now because always called GET_CONTENT_BY_ID
   if (action.type === constants.UPDATE_CONTENT_BY_ID) {
     const content = action.content;
-    console.log("update: " + content);
+    // console.log("update: " + content);
     return state.set("content", content);
   }
 

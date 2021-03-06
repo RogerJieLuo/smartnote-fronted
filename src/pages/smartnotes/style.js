@@ -6,5 +6,5 @@ export const MainContainer = styled.div`
 
   display: flex;
 
-  border: 1px solid blue;
+  // border: 1px solid blue;
 `;

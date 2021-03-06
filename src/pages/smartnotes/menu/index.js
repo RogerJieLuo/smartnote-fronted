@@ -13,7 +13,6 @@ class NoteMenu extends Component {
       <Menu>
         <MenuItem>
           <Provider store={store}>
-            {/* <NewNote /> */}
             <NoteList />
           </Provider>
         </MenuItem>
