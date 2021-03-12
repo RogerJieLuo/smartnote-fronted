@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { actionCreators } from "../../common";
-import { FileContainer, Title, ContentArea, DeleteButton } from "./style";
+import { FileContainer, ContentArea, CustomLink } from "./style";
 
 import { connect } from "react-redux";
 import {
@@ -9,24 +9,107 @@ import {
   RichUtils,
   convertToRaw,
   convertFromRaw,
+  CompositeDecorator,
 } from "draft-js";
 
 class FileArea extends Component {
   constructor(props) {
     super(props);
-    const id = this.props.file.get("id");
-    const title = this.props.file.get("title");
-    const content = this.props.file.get("content");
 
-    this.state = { id: id, title: title };
+    const content = this.props.file.get("content");
+    const decorator = new CompositeDecorator([
+      {
+        strategy: findLinkEntities,
+        component: Link,
+      },
+    ]);
+
+    this.state = { showURLInput: false, urlValue: "" };
     if (content && this.checkJson(content)) {
       this.state.editorState = EditorState.createWithContent(
-        convertFromRaw(JSON.parse(content))
+        convertFromRaw(JSON.parse(content)),
+        decorator
       );
     } else {
-      this.state.editorState = EditorState.createEmpty();
+      this.state.editorState = EditorState.createEmpty(decorator);
     }
     this.handleKeyCommand = this.handleKeyCommand.bind(this);
+
+    this.onChange = (editorState) => this.setState({ editorState });
+    this.promptForLink = this._promptForLink.bind(this);
+    this.onURLChange = (e) => this.setState({ urlValue: e.target.value });
+    this.confirmLink = this._confirmLink.bind(this);
+    this.onLinkInputKeyDown = this._onLinkInputKeyDown.bind(this);
+    this.removeLink = this._removeLink.bind(this);
+  }
+
+  _promptForLink(e) {
+    e.preventDefault();
+    const { editorState } = this.state;
+    const selection = editorState.getSelection();
+    if (!selection.isCollapsed()) {
+      const contentState = editorState.getCurrentContent();
+      const startKey = editorState.getSelection().getStartKey();
+      const startOffset = editorState.getSelection().getStartOffset();
+      const blockWithLinkAtBeginning = contentState.getBlockForKey(startKey);
+      const linkKey = blockWithLinkAtBeginning.getEntityAt(startOffset);
+
+      let url = "";
+      if (linkKey) {
+        const linkInstance = contentState.getEntity(linkKey);
+        url = linkInstance.getData().url;
+      }
+
+      this.setState({
+        showURLInput: true,
+        urlValue: url,
+      });
+    }
+  }
+
+  _confirmLink(e) {
+    // e.preventDefault();
+    const { editorState, urlValue } = this.state;
+    const contentState = editorState.getCurrentContent();
+    const contentStateWithEntity = contentState.createEntity(
+      "LINK",
+      "MUTABLE",
+      { url: urlValue }
+    );
+
+    const entityKey = contentStateWithEntity.getLastCreatedEntityKey();
+    const newEditorState = EditorState.set(editorState, {
+      currentContent: contentStateWithEntity,
+    });
+    this.setState({
+      editorState: RichUtils.toggleLink(
+        newEditorState,
+        newEditorState.getSelection(),
+        entityKey
+      ),
+      showURLInput: false,
+      urlValue: "",
+    });
+    if (urlValue === "") {
+      this.removeLink(e);
+    }
+  }
+
+  _onLinkInputKeyDown(e) {
+    if (e.which === 13) {
+      this._confirmLink(e);
+    }
+  }
+
+  _removeLink(e) {
+    e.preventDefault();
+    const { editorState } = this.state;
+    const selection = editorState.getSelection();
+    if (!selection.isCollapsed()) {
+      this.setState({
+        editorState: RichUtils.toggleLink(editorState, selection, null),
+      });
+    }
   }
 
   handleKeyCommand(command) {
@@ -44,30 +127,33 @@ class FileArea extends Component {
   }
 
   render() {
+    let urlInput;
+    if (this.state.showURLInput) {
+      urlInput = (
+        <div>
+          <input
+            onChange={this.onURLChange}
+            type="text"
+            value={this.state.urlValue}
+            onKeyDown={this.onLinkInputKeyDown}
+          />
+          <button onMouseDown={this.confirmLink}>Confirm</button>
+        </div>
+      );
+    }
+
     return (
       <FileContainer>
-        <Title
-          value={this.state.title}
-          onChange={(e) => this.updateTitle(e.target.value)}
-        />
-        <DeleteButton
-          onClick={() => {
-            if (
-              window.confirm(
-                "Are you sure you wish to delete this item? - " +
-                  this.props.file.get("id")
-              )
-            )
-              this.delete(this.props.file.get("id"));
-          }}
-        >
-          X
-        </DeleteButton>
+        <div>
+          <button onMouseDown={this.promptForLink}>Add Link</button>
+        </div>
+        {urlInput}
         <ContentArea>
           <Editor
             editorState={this.state.editorState}
             onChange={(editorState) => this.updateContent(editorState)}
             handleKeyCommand={this.handleKeyCommand}
+            placeholder="Enter some text..."
           />
         </ContentArea>
       </FileContainer>
@@ -87,56 +173,53 @@ class FileArea extends Component {
     this.props.updateTag(this.props.file.get("id"), tag);
   }
 
-  updateTitle(title) {
-    this.setState({ title: title });
-    this.props.updateTitle(this.props.file.get("id"), title);
-  }
-
   updateContent(editorState) {
-    // save to data
-    if (editorState.getCurrentContent().hasText()) {
-      const content = editorState.getCurrentContent();
-      this.props.updateContent(
-        this.props.file.get("id"),
-        JSON.stringify(convertToRaw(content))
-      );
-    }
+    const content = editorState.getCurrentContent();
+    this.props.updateContent(
+      this.props.file.get("id"),
+      JSON.stringify(convertToRaw(content))
+    );
     this.setState({ editorState: editorState });
   }
 
   // function to trigger bold type
-  _onBoldClick() {
-    this.onChange(RichUtils.toggleInlineStyle(this.state.editorState, "BOLD"));
-  }
+  // _onBoldClick() {
+  //   this.onChange(RichUtils.toggleInlineStyle(this.state.editorState, "BOLD"));
+  // }
 
   // re-render the constructor
   componentDidUpdate(prevProps) {
     const newId = this.props.file.get("id");
     const oldId = prevProps.file.get("id");
     if (oldId !== newId) {
-      // console.log("newID: " + newId + ", oldId: " + oldId);
+      console.log("id changed");
+      const decorator = new CompositeDecorator([
+        {
+          strategy: findLinkEntities,
+          component: Link,
+        },
+      ]);
       const content = this.props.file.get("content");
+
       if (content && this.checkJson(content)) {
+        let editorState = EditorState.createWithContent(
+          convertFromRaw(JSON.parse(content), decorator)
+        );
+
+        editorState = EditorState.set(editorState, { decorator: decorator });
         this.setState({
-          editorState: EditorState.createWithContent(
-            convertFromRaw(JSON.parse(content))
-          ),
+          editorState: editorState,
         });
       } else {
+        // in case the content in the db is not the right format
         this.setState({
-          editorState: EditorState.createEmpty(),
+          editorState: EditorState.createEmpty(decorator),
         });
       }
-      // console.log("new id?" + this.props.file.get("id"));
       this.setState({
-        title: this.props.file.get("title"),
+        showURLInput: false,
+        urlValue: "",
       });
-    }
-  }
-
-  delete(id) {
-    if (id) {
-      this.props.delete(id);
     }
   }
 }
@@ -149,22 +232,30 @@ const mapStateToProps = (state) => {
 
 const mapDispatchToProps = (dispatch) => {
   return {
-    getContent(id) {
-      dispatch(actionCreators.getContentById(id));
-    },
-    updateTitle(id, title) {
-      dispatch(actionCreators.updateTitleById(id, title));
-    },
     updateContent(id, content) {
       dispatch(actionCreators.updateContentById(id, content));
     },
     updateTag(id, tag) {
       dispatch(actionCreators.updateTagById(id, tag));
     },
-    delete(id) {
-      dispatch(actionCreators.deleteNoteById(id));
-    },
   };
+};
+
+function findLinkEntities(contentBlock, callback, contentState) {
+  console.log("...");
+  contentBlock.findEntityRanges((character) => {
+    console.log("find link");
+    const entityKey = character.getEntity();
+    return (
+      entityKey !== null &&
+      contentState.getEntity(entityKey).getType() === "LINK"
+    );
+  }, callback);
+}
+
+const Link = (props) => {
+  const { url } = props.contentState.getEntity(props.entityKey).getData();
+  return <CustomLink href={url}>{props.children}</CustomLink>;
 };
 
 export default connect(mapStateToProps, mapDispatchToProps)(FileArea);

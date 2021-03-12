@@ -6,14 +6,6 @@ export const FileContainer = styled.div`
   // border: 1px solid blue;
 `;
 
-export const Title = styled.input`
-    width: 80%;
-    height; 20px;
-    margin-top: 20px;
-    
-    // border: 1px solid green;
-`;
-
 export const ContentArea = styled.div.attrs({
   // contentEditable: true,
 })`
@@ -31,4 +23,8 @@ export const DeleteButton = styled.button`
   height: 20px;
 
   border: 1px solid green;
+`;
+
+export const CustomLink = styled.a`
+  color: gray;
 `;

@@ -3,7 +3,7 @@ import { WorkAreaContainer } from "./style";
 import { connect } from "react-redux";
 
 import FileArea from "./fileArea";
-import Tools from "./tools";
+import TitleHeader from "./title";
 
 class WorkArea extends Component {
   constructor(props) {
@@ -12,16 +12,19 @@ class WorkArea extends Component {
   }
   render() {
     let noteContent;
+    let header;
     const id = this.props.file.get("id");
     if (id) {
+      header = <TitleHeader id={id} />;
       noteContent = <FileArea id={id} />;
     } else {
+      header = <div />;
       noteContent = <div />;
     }
     return (
       <Fragment>
         <WorkAreaContainer>
-          <Tools />
+          {header}
           {noteContent}
         </WorkAreaContainer>
       </Fragment>
